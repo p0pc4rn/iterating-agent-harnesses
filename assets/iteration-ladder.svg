@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="800" height="420" fill="#f8f9fb" rx="8"/>
+  <text x="30" y="34" font-size="16" font-weight="700" fill="#1a2233">迭代阶梯：新复杂度出现时，选「能 hold 住的最低一档」</text>
+
+  <!-- cost axis -->
+  <line x1="34" y1="64" x2="34" y2="392" stroke="#9aa3b2" stroke-width="2" marker-end="url(#dn)"/>
+  <defs>
+    <marker id="dn" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto">
+      <path d="M0,0 L9,0 L4.5,9 z" fill="#9aa3b2"/>
+    </marker>
+  </defs>
+  <text x="22" y="230" font-size="12" fill="#9aa3b2" transform="rotate(-90 22 230)" text-anchor="middle">系统代价 递增</text>
+
+  <!-- rows -->
+  <!-- row 0 (pre) -->
+  <rect x="56" y="58"  width="544" height="46" rx="6" fill="#eceef2" stroke="#cfd5df" stroke-width="1"/>
+  <circle cx="82" cy="81" r="13" fill="#9aa3b2"/><text x="82" y="86" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">0</text>
+  <text x="108" y="86" font-size="14" font-weight="700" fill="#3a4250">先跑·定位·分类</text>
+  <text x="300" y="86" font-size="12" fill="#5a6472">灌真实场景看它在哪崩；贴标签：本质 / 补偿</text>
+
+  <!-- row 1 -->
+  <rect x="56" y="112" width="544" height="46" rx="6" fill="#dbeafe" stroke="#9bbbe0" stroke-width="1"/>
+  <circle cx="82" cy="135" r="13" fill="#2f6fb0"/><text x="82" y="140" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">1</text>
+  <text x="108" y="140" font-size="14" font-weight="700" fill="#234a73">改单元内部（方法）</text>
+  <text x="300" y="140" font-size="12" fill="#3f5a78">落在某单元边界内 · 接缝不动 · 最便宜</text>
+
+  <!-- row 2 -->
+  <rect x="56" y="166" width="544" height="46" rx="6" fill="#dbeafe" stroke="#9bbbe0" stroke-width="1"/>
+  <circle cx="82" cy="189" r="13" fill="#2f6fb0"/><text x="82" y="194" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">2</text>
+  <text x="108" y="194" font-size="14" font-weight="700" fill="#234a73">改契约（接缝）</text>
+  <text x="300" y="194" font-size="12" fill="#3f5a78">横跨两单元 · 改契约让两端顺从，别 patch 两个内部</text>
+
+  <!-- row 3 -->
+  <rect x="56" y="220" width="544" height="46" rx="6" fill="#dbeafe" stroke="#9bbbe0" stroke-width="1"/>
+  <circle cx="82" cy="243" r="13" fill="#2f6fb0"/><text x="82" y="248" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">3</text>
+  <text x="108" y="248" font-size="14" font-weight="700" fill="#234a73">加单元</text>
+  <text x="300" y="248" font-size="12" fill="#3f5a78">可分离的新关注点 · 隔离→agent / 复用→skill</text>
+
+  <!-- row 4 (highlight) -->
+  <rect x="56" y="274" width="544" height="46" rx="6" fill="#fdecc8" stroke="#e0a93b" stroke-width="2"/>
+  <circle cx="82" cy="297" r="13" fill="#c77f0a"/><text x="82" y="302" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">4</text>
+  <text x="108" y="302" font-size="14" font-weight="700" fill="#7a4f06">重切边界</text>
+  <text x="300" y="302" font-size="12" fill="#7a4f06">同一道缝反复冒 fixup / 单元反复即兴 → 当初切错了</text>
+
+  <!-- row 5 (highlight) -->
+  <rect x="56" y="328" width="544" height="46" rx="6" fill="#fdecc8" stroke="#e0a93b" stroke-width="2"/>
+  <circle cx="82" cy="351" r="13" fill="#c77f0a"/><text x="82" y="356" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">5</text>
+  <text x="108" y="356" font-size="14" font-weight="700" fill="#7a4f06">合并 / 删除</text>
+  <text x="300" y="356" font-size="12" fill="#7a4f06">两单元其实是一个 / 某单元是过时补偿</text>
+
+  <!-- brace + callout on 4-5 -->
+  <path d="M 608 274 q 8 0 8 8 v 38 q 0 8 8 8 q -8 0 -8 8 v 38 q 0 8 -8 8" fill="none" stroke="#c0392b" stroke-width="1.6"/>
+  <text x="632" y="318" font-size="12" font-weight="700" fill="#c0392b">「改 or 加」</text>
+  <text x="632" y="334" font-size="12" font-weight="700" fill="#c0392b">漏掉的破坏性动作</text>
+  <text x="632" y="352" font-size="11.5" fill="#c0392b">不做 → 只能固化</text>
+  <text x="632" y="367" font-size="11.5" fill="#c0392b">最初的错误</text>
+</svg>
