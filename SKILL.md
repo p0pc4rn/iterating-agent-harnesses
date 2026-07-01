@@ -1,59 +1,59 @@
 ---
 name: iterating-agent-harnesses
-description: 当你在迭代或演进一条由多个 LLM agent / 多步骤串起来的 pipeline 时使用，尤其在这些决策的当下——要加一个 agent/skill/gate/校验/instruction 规则、要定义或修改 agent 之间的契约（接缝）、要修一个偶发失败或上下游格式对不上、要决定一段逻辑放 agent 还是 skill 还是内联；也用于这些症状：pipeline 悄悄退化、测试全绿却越来越差、补丁越堆越多不敢删、每次迭代变慢不敢动。
+description: Use when iterating or evolving a pipeline of multiple LLM agents (or a multi-step LLM chain), especially at these decision points—adding an agent/skill/gate/validation/instruction rule, defining or changing a contract (seam) between agents, fixing an intermittent failure or an upstream-downstream format mismatch, or deciding whether a piece of logic goes in an agent, a skill, or inline; also for these symptoms: the pipeline silently degrades, tests stay green while output quality drops, patches pile up that nobody dares delete, each iteration gets slower and scarier.
 ---
 
 # Iterating Agent Harnesses
 
-一套**迭代 AI agent pipeline 时的决策自检清单**。在动 pipeline 的当下，对照它把你的方案检一遍：这一步做对了没有。
+A **decision self-check list for iterating an AI agent pipeline**. At the moment you're about to change the pipeline, run your plan past it: did I get this step right?
 
-它不假设你有多强。弱一点的模型靠它把该做的做全；再强的模型也会在赶进度、图省事、过度自信时漏掉或做反其中几条——这套清单就是让你自己把它们检出来的尺子。**不要因为"这条我肯定做对了"就跳过任何一条**，最强的模型恰恰是在这种自信里破规矩的。
+It assumes nothing about how strong you are. A weaker model uses it to cover everything it should; even the strongest model drops or reverses a few of these under deadline pressure, laziness, or overconfidence—this list is the yardstick you use to catch them yourself. **Don't skip any line just because "I definitely got this one right"**; the strongest model breaks the rules precisely inside that confidence.
 
-底层三个事实决定了下面每条为什么这么做：复杂度守恒（本质难度只能在层间搬家，消不掉）、复杂度不可知（藏在模型的实际行为里，动手前测不出，只能跑出来撞上）、地基在升（模型底座持续变强，为当下缺陷搭的结构会过期）。核心心态：你不是在设计 pipeline，是在发现复杂度藏在哪，并把发现记成将来拆得掉的形态。完整背景见 [README.zh.md](README.zh.md)。
+Three underlying facts explain why each line below is what it is: complexity is conserved (essential difficulty only moves between layers, it can't be destroyed), complexity is unpredictable (it hides in the model's actual behavior, unmeasurable before you run it, found only by colliding with it), and the foundation keeps rising (the base model keeps getting stronger, so structure built for today's flaws expires). Core mindset: you're not designing the pipeline, you're discovering where the complexity hides, and recording each finding in a form you can tear out later. Full background in [README.md](README.md).
 
-## 决策自检清单
+## Decision self-check list
 
-逐条对照，每条是"我做到了吗"，不是可选建议。
+Go through each; each is "did I do this?", not optional advice.
 
-**A. 先观测，再动手。**
-- 有没有一小批真实输入（能踩到未知、不是玩具）、能存下每段的输入输出、能重放任一条 case？没有观测，你对"哪出问题"的每个结论都是猜的——先补上再改。
-- 元规矩：**没被一个真实失败逼出来的结构，一律不加。** 你加的每样东西，先说得出它是哪次真跑挂了挣来的。
+**A. Observe first, then act.**
+- Do you have a small set of real inputs (that hit the unknown, not toys), the ability to save each stage's input/output, and to replay any single case? Without observation, every conclusion about "where the problem is" is a guess—build that first, then change things.
+- Meta-rule: **add no structure that wasn't forced out by a real failure.** For everything you add, be able to name which real run it broke on that earned it.
 
-**B. 加任何结构前，分本质还是补偿。**（最容易漏）
-- 判据：假设模型变得完美可靠、能力无穷，而需求一字未改，这块还要不要？要 = 本质（问题本身的难，留）；不要 = 补偿。
-- 校验、重试、兜底、纠正提示、格式约束……大多是补偿，兜的是模型当下的缺陷。补偿会过期：模型一变强，它就从支撑变成卡住新模型的负担，而且没人回头删。
-- **最常被漏的动作**：判为补偿的，当场留一个能复现"它所防的那个模型缺陷"的最小用例，跟代码放一起。以后每次模型升级，关掉补偿、让新模型裸跑这个用例，过了就删。**没有这个退役用例，就不要加这个补偿。** 补偿默认"待删"，不是永久件。
+**B. Before adding any structure, sort it into Essence or Compensation.** (most often skipped)
+- Test: assume the model becomes perfectly reliable and infinitely capable, while the requirement is unchanged word-for-word—is this still needed? Yes = Essence (the difficulty of the problem itself; keep it). No = Compensation.
+- Validations, retries, fallbacks, corrective hints, format constraints... are mostly Compensation, covering a current flaw of the model. Compensation expires: once the model gets stronger it turns from support into a weight that jams the newer model, and nobody goes back to delete it.
+- **The most-skipped action**: for anything judged Compensation, right then leave a minimal case that reproduces "the model flaw it guards against," next to the code. On every later model upgrade, switch the compensation off, run the newer model bare against that case, and if it passes, delete it. **Without that retirement case, don't add the compensation.** Compensation defaults to "pending deletion," not permanent.
 
-**C. 接缝可以拒绝，绝不许编。**（红线，即使强模型也常破）
-- 上游缺字段 / 拿不准 / 格式不对时，正确行为是**显式拒绝**（输出"我做不了 / 输入不满足前提"），让下游停下或走受控兜底。以下都按 bug 处理，不是容错：
-  - 给缺失字段补一个默认值放行
-  - 给下游造一个"安全的默认输入"让它继续
-  - 截断 / 硬凑 / best-effort 解析一个不合格输入蒙混过去
-- 拿编造的数据喂下游，是整条链最贵的失败——末端才暴露、无从归因。诚实拒绝一次，比自信地错下去、再被后面九段当真，代价小得多。
-- 该在出口 / 接缝加确定性 gate、fail-fast、fail-closed；别用到处 try/catch 把崩溃变成静默出错。接缝验收要验 **meaning（意思对不对）**，不只验 shape（类型在不在）。
+**C. A seam may refuse, but must never fabricate.** (red line; even strong models break it often)
+- When the upstream is missing a field / unsure / malformed, the correct behavior is an **explicit refusal** (output "I can't do this / precondition not met"), letting the downstream stop or take a controlled fallback. All of the following are treated as bugs, not fault-tolerance:
+  - filling a missing field with a default and passing it on
+  - fabricating a "safe default input" for the downstream so it keeps going
+  - truncating / forcing / best-effort parsing a malformed input to sneak it through
+- Feeding fabricated data downstream is the most expensive failure in the whole chain—it surfaces only at the end, with no way to trace it back. One honest refusal costs far less than confidently going wrong and being trusted by the nine stages after it.
+- Put a deterministic gate at the exit / seam; fail-fast, fail-closed. Don't use try/catch everywhere to turn a crash into a silent wrong result. Seam acceptance must check **meaning** (is it right), not just **shape** (is the type present).
 
-**D. 收边界，不收解法。**（最容易做反）
-- 想让一个 agent 更可靠时，别急着把步骤写细、拆成机械流程。先定边界：输入要什么、输出给什么、什么算"做对了"（一条可验证的验收标准 / 自检）、失败怎么办。定死磨锋利。
-- 内部怎么一步步做，尽量留给模型；能靠那把验收尺子达到的效果，就别用写死的步骤去堆。
-- 确定的步骤 → 写成代码 / gate 让它调用，不写成散文；要判断的 → 切子边界、每个配一把验收尺子；给判断的活儿写一串散文步骤又不配验收 = 最差（降不成代码、放不了判断、没法自验）。
-- 自检：某单元没按你写的步骤走、但产出过了你的验收，你高兴还是恼火？恼火 = 你把它写成菜谱了。
+**D. Converge the boundary, not the solution.** (most often done backwards)
+- When you want an agent to be more reliable, don't rush to spell out the steps and turn it into a mechanical procedure. Define the boundary first: what comes in, what goes out, what counts as "done right" (a verifiable acceptance criterion / self-check), what to do on failure. Nail those down and sharpen them.
+- Leave the internal step-by-step to the model as much as possible; whatever the acceptance yardstick can achieve, don't stack hard-coded steps to do.
+- Deterministic steps → write them as code / a gate it invokes, not prose; steps needing judgment → cut into sub-boundaries, each with its own acceptance yardstick; a string of prose steps for a judgment task with no gate = the worst kind (can't drop to code, won't hand off to judgment, can't self-verify).
+- Self-check: a unit ignored your steps but its output passed your acceptance—are you pleased or annoyed? Annoyed = you wrote it as a recipe.
 
-**E. 迭代不止"改一改"和"加一个"。**
-- 按代价爬阶梯：`改单元内部 < 改契约 < 加单元 < 重切边界 < 合并/删除`。先用扛得住的最低一档，但**别假装后三档不存在**——同一道缝反复打补丁、某单元反复临场发挥 = 当初这一刀切错了，该重切 / 合并 / 删，不是再糊一层。
+**E. Iteration is more than "tweak" and "add."**
+- Climb the cost ladder: `change unit internals < change contract < add unit < re-cut boundary < merge/delete`. Use the lowest rung that holds, but **don't pretend the last three rungs don't exist**—the same seam patched over and over, or a unit improvising over and over, means the cut was wrong to begin with; re-cut / merge / delete, don't slap on another layer.
 
-**F. 一段逻辑放哪。**
-- 要隔离（脏活别占主流程 context）→ agent；要复用 / 带确定性代码 → skill；两样都要 → 一个几乎空壳的 agent 套一个 skill；两样都不要 → 直接内联进调用方，别建单元。别把一段可复用方法复制内联进多个 agent。
+**F. Where a piece of logic goes.**
+- Need isolation (keep dirty work out of the main context) → agent; need reuse / carries deterministic code → skill; need both → a near-empty agent shell wrapping a skill; need neither → inline it into the caller, build no unit. Don't copy a reusable method inline into multiple agents.
 
-**G. 每轮收尾，看两个健康指标。**
-- 发现循环要一直便宜：真实 case 端到端跑一遍多久、挂了多快定位、一处改动记录和将来删除多容易。
-- 接缝要尽快翻红：一道缝悄悄改了意思，最好下一个真实 case 就暴露。答案若是"不知道 / 很多次 / 从不" = 这道缝没装观测，正在暗处烂。
-- 哪个变贵 / 变钝了 = 补偿堆太多，回 E 重切还债，而不是继续加结构。
+**G. At the end of each round, watch two health metrics.**
+- The discovery loop must stay cheap: how long a real case takes end-to-end, how fast a failure localizes, how easily one change is recorded and later deleted.
+- The seam must turn red fast: when a seam quietly changes meaning, ideally the very next real case exposes it. If the answer is "don't know / many times / never," that seam has no observation on it and is rotting in the dark.
+- Whichever gets more expensive / blunter means too much compensation has piled up; go back to E and re-cut to repay the debt, instead of adding more structure.
 
-## Red flags（赶进度、图省事时最容易破，逐条自查）
+## Red flags (easiest to break under deadline or laziness; self-check each)
 
-- "先加个默认值兜住，让它别报错" → 破 C 红线。
-- "加个校验 / 重试解决" 但没留退役用例 → 破 B，这补偿会变永久债。
-- "把步骤写详细点约束它" → 大概率在写菜谱（D），先想能不能只定验收。
-- "这道缝老出问题，再加个补丁" → 可能该重切（E），不是再加。
-- 面对新问题第一反应是"加点什么" → 先问：这是哪次真实失败逼出来的？（A 元规矩）
-- "这条我肯定做对了，跳过" → 停。逐条过一遍，别信自己没检过的自信。
+- "Just add a default to keep it from erroring" → breaks red line C.
+- "Add a validation / retry to fix it" but no retirement case → breaks B; this compensation becomes permanent debt.
+- "Spell the steps out more to constrain it" → probably writing a recipe (D); first ask whether you can just define acceptance.
+- "This seam keeps failing, add another patch" → maybe it should be re-cut (E), not added to.
+- First reaction to a new problem is "add something" → first ask: which real failure forced this? (A meta-rule)
+- "I definitely got this one right, skip it" → stop. Go through each line; don't trust confidence you haven't checked.
